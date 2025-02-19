@@ -13,7 +13,7 @@ from utils import check_utils
 h5path = 'Data/2_Processed/'
 
 # Checks both walking and running data
-activity_list = ['walking', 'running']
+activity_list = ['walking_test', 'running_test']
 
 for act in activity_list:
 

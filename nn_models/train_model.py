@@ -50,13 +50,16 @@ def main(general_spec, model_spec, show_bar=True):
 
     # Add model scheduler and loss to the logger
     logger.set_logging_objects(model, scheduler, criterion)
-    log_utils.write_info(general_spec['result_path'], general_spec['name'],
-                         general_spec, stage_spec, model, scheduler)
+    # print(f'general_spec: {general_spec}')
+    print(f"path: {general_spec['result_path'] + general_spec['name']}")
+    log_utils.write_info(general_spec['result_path'], general_spec['name'], # logger.exp_name, #
+                         general_spec, stage_spec, model, scheduler) # result_path, exp_name, general_spec, stage_spec, model, scheduler
 
     # Pickle dictionary with the model type and parameters
     model_kwargs_dict = model_spec
     model_kwargs_dict['model_type'] = model_type
     with open(general_spec['result_path'] + general_spec['name'] + '/model_kwargs.pkl', 'wb') as f:
+    # with open(general_spec['result_path'] + logger.exp_name + '/model_kwargs.pkl', 'wb') as f:
         pickle.dump(model_kwargs_dict, f)
 
     # Split up subjects into 80% training, 10% validation, 10% test

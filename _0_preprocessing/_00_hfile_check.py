@@ -122,3 +122,6 @@ if __name__ == '__main__':
 
     viz_h5_data(h5walk)
     viz_h5_data(h5run)
+
+    subj_char(h5walk)
+    subj_char(h5run)

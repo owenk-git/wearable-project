@@ -11,7 +11,7 @@ import numpy as np
 import os
 import torch
 from collections import OrderedDict
-
+from datetime import datetime
 formatter = logging.Formatter('%(message)s')
 
 
@@ -20,12 +20,12 @@ class TrainLogger():
         # Assign logging parameters and objects
         self.acc_time = 0
         self.idx = 0
-        self.exp_name = exp_name
+        self.exp_name = f"experiment_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.log_freq = log_freq
         self.check_freq = check_freq
 
         # Specify folder structure and create it
-        self.exp_path = result_path + exp_name
+        self.exp_path = result_path + self.exp_name
 
         self.log_path = self.exp_path + '/logs'
         self.check_path = self.exp_path + '/checkpoints'
@@ -155,7 +155,9 @@ class TrainLogger():
 def write_info(result_path, exp_name, general_spec, stage_spec, model, scheduler):
     # Writes model information to result path
 
-    info_path = result_path + '/' + exp_name + '/info'
+    info_path = result_path  + exp_name + '/info'
+    # ✅ 確保目錄存在，若不存在則創建
+    os.makedirs(os.path.dirname(info_path), exist_ok=True)
 
     exp_info = OrderedDict()
     exp_info['Experiment name'] = exp_name

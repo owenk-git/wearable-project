@@ -16,7 +16,7 @@ from collections import defaultdict
 import pandas as pd
 from functools import partial
 import torch
-
+import os
 from hyperopt import hp, fmin, tpe, Trials, STATUS_OK
 
 
@@ -52,7 +52,8 @@ def assign_params(params, model, joint, data_path, result_path):
     # General specification
     general_spec = {
         'model_type': model,
-        'data_path': data_path, 'result_path': result_path+joint[0].upper()+joint[1:]+'/',
+        'data_path': data_path,
+        'result_path': os.path.join(result_path, joint.capitalize()) + '/',
         # Model input and output specification
         'inp': ['pelvis', 'thigh', 'shank', 'foot'], 'outp': ['hip', 'knee', 'ankle'],
         # Logging specification

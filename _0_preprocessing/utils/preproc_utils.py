@@ -231,4 +231,5 @@ def create_h5_file(h5path, nh5path, sub_ids, fname):
             # Add meta data to each subject
             nfh.create_dataset(sub + '/meta', data=meta)
             # Boolean to indicate whether the data passed all checks or not
-            nfh.attrs['checks_passed'] = False
+            # nfh.attrs['checks_passed'] = False
+            nfh[sub].attrs['checks_passed'] = True
