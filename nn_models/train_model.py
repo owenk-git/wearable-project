@@ -16,6 +16,7 @@ from nn_models.utils import prep_utils, data_utils, dloader_utils  # noqa
 from nn_models.utils import log_utils, train_utils  # noqa
 from nn_models.models.pure_conv import *  # noqa
 from nn_models.models.pure_lstm import *  # noqa
+from nn_models.models.pure_transformer import *  # noqa
 
 
 def main(general_spec, model_spec, show_bar=True):
