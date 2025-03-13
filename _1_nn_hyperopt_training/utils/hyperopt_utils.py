@@ -138,7 +138,6 @@ def assign_params(params, model, joint, data_path, result_path):
         model_spec['inp_size'] = [8 * len(general_spec['inp'])]
         model_spec['outp_size'] = [3 * len(general_spec['outp'])]
     elif model == 'transformer':
-        # For example:
         # model_spec = {
         #     'inp_size': [8 * len(general_spec['inp'])],
         #     'outp_size': [3 * len(general_spec['outp'])],
