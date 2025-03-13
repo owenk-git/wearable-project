@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # Example usage for the new transformer:
     transformer_model = 'transformer'
-    num_eval_transformer = 10
+    num_eval_transformer = 50
 
     print('Walking transformer begin...')
     walking_lstm_hip = run_model(walking_data_path, walking_result_path, num_eval_transformer, transformer_model, ['hip'], rstate=custom_rstate)

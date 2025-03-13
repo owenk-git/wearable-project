@@ -36,17 +36,24 @@ def search_space(model):
         space['window'] = hp.choice('window', [11, 21, 31, 41, 51])  # Window size
     elif model == 'CustomLSTM':
         space['bidir'] = hp.choice('bidir', [False, True])  # Directionality
+    # elif model == 'transformer':
+    #     # Example search space for the Transformer
+    #     # You can enlarge or reduce this space as needed:
+    #     space['d_model'] = hp.choice('d_model', [64, 96, 128])
+    #     space['num_heads'] = hp.choice('num_heads', [2, 4, 6])
+    #     space['dim_feedforward'] = hp.choice('dim_feedforward', [128, 256, 512])
+    #     space['num_layers'] = hp.choice('num_layers', [2, 4, 6])
+    #     space['dropout'] = hp.uniform('dropout', 0.0, 0.3)
+    #     # If you want a "window" hyperparam, you could add that too
+    #     # but typically for Transformers you might rely on seq_len from train spec
+    # return space
     elif model == 'transformer':
-        # Example search space for the Transformer
-        # You can enlarge or reduce this space as needed:
-        space['d_model'] = hp.choice('d_model', [64, 96, 128])
-        space['num_heads'] = hp.choice('num_heads', [2, 4, 6])
-        space['dim_feedforward'] = hp.choice('dim_feedforward', [128, 256, 512])
-        space['num_layers'] = hp.choice('num_layers', [2, 4, 6])
+        space['d_model'] = hp.choice('d_model', [64, 96, 128])          # smaller embedding sizes
+        space['num_heads'] = hp.choice('num_heads', [2, 4])            # fewer heads (avoid 6+ if OOM)
+        space['dim_feedforward'] = hp.choice('dim_feedforward', [128, 256, 512])  # keep feedforward small
+        space['num_layers'] = hp.choice('num_layers', [2, 3, 4])       # keep depth modest
         space['dropout'] = hp.uniform('dropout', 0.0, 0.3)
-        # If you want a "window" hyperparam, you could add that too
-        # but typically for Transformers you might rely on seq_len from train spec
-    return space
+    return space    
 
 def assign_params(params, model, joint, data_path, result_path):
     # Assigns the parameters to the general and model specifications
@@ -79,7 +86,7 @@ def assign_params(params, model, joint, data_path, result_path):
         # Training schedule
         'seq_len': [200, 400], 
         'num_iter': 2 * [params['iter']],
-        'batch_size': [4, 8] #[8, 16]
+        'batch_size': [2, 4] # 8, 16
     }
 
     # Assigns inputs according to the joint analyzed
@@ -132,16 +139,27 @@ def assign_params(params, model, joint, data_path, result_path):
         model_spec['outp_size'] = [3 * len(general_spec['outp'])]
     elif model == 'transformer':
         # For example:
+        # model_spec = {
+        #     'inp_size': [8 * len(general_spec['inp'])],
+        #     'outp_size': [3 * len(general_spec['outp'])],
+        #     'num_layers': params['num_layers'],
+        #     'd_model': params['d_model'],
+        #     'num_heads': params['num_heads'],
+        #     'dim_feedforward': params['dim_feedforward'],
+        #     'dropout': params['dropout'],
+        #     'max_seq_len': 400,  # or 200—depending on largest seq in your schedule
+        #     # Make sure you pass 'prediction' to keep the same pipeline
+        #     'prediction': 'angle'
+        # }
         model_spec = {
             'inp_size': [8 * len(general_spec['inp'])],
             'outp_size': [3 * len(general_spec['outp'])],
-            'num_layers': params['num_layers'],
-            'd_model': params['d_model'],
-            'num_heads': params['num_heads'],
-            'dim_feedforward': params['dim_feedforward'],
-            'dropout': params['dropout'],
-            'max_seq_len': 400,  # or 200—depending on largest seq in your schedule
-            # Make sure you pass 'prediction' to keep the same pipeline
+            'num_layers': params['num_layers'],        # e.g., in [2, 3, 4]
+            'd_model': params['d_model'],             # e.g., in [64, 96, 128]
+            'num_heads': params['num_heads'],         # e.g., in [2, 4]
+            'dim_feedforward': params['dim_feedforward'],  # e.g., in [128, 256, 512]
+            'dropout': params['dropout'],             # e.g., 0.0 ~ 0.3
+            'max_seq_len': 200,                       # or even 100 if 400 is too large
             'prediction': 'angle'
         }
         mdl_name = ("transformer_layers{}_dmodel{}_heads{}_ff{}_drop{}_lr{}_decay{}_iter{}"
