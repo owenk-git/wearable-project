@@ -26,6 +26,10 @@
 # outputs
 ######################
 Data
+Data.h5
+s999
+Preprocessed_external_data_1
+Preprocessed_external_data_2
 __pycache__
 tmp*
 _00_matlab_to_python
@@ -46,3 +50,4 @@ _3_analysis
 .Trashes
 ehthumbs.db
 Thumbs.db
+.gitignore
