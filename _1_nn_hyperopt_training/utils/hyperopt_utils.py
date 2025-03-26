@@ -47,11 +47,19 @@ def search_space(model):
     #     # If you want a "window" hyperparam, you could add that too
     #     # but typically for Transformers you might rely on seq_len from train spec
     # return space
+    # elif model == 'transformer':
+    #     space['d_model'] = hp.choice('d_model', [64, 96, 128])          # smaller embedding sizes
+    #     space['num_heads'] = hp.choice('num_heads', [2, 4])            # fewer heads (avoid 6+ if OOM)
+    #     space['dim_feedforward'] = hp.choice('dim_feedforward', [128, 256, 512])  # keep feedforward small
+    #     space['num_layers'] = hp.choice('num_layers', [2, 3, 4])       # keep depth modest
+    #     space['dropout'] = hp.uniform('dropout', 0.0, 0.3)
+    # return space    
     elif model == 'transformer':
-        space['d_model'] = hp.choice('d_model', [64, 96, 128])          # smaller embedding sizes
-        space['num_heads'] = hp.choice('num_heads', [2, 4])            # fewer heads (avoid 6+ if OOM)
-        space['dim_feedforward'] = hp.choice('dim_feedforward', [128, 256, 512])  # keep feedforward small
-        space['num_layers'] = hp.choice('num_layers', [2, 3, 4])       # keep depth modest
+        # Keep everything minimal:
+        space['d_model'] = hp.choice('d_model', [32, 64])     # smaller embeddings
+        space['num_heads'] = hp.choice('num_heads', [1, 2])   # just 1–2 heads
+        space['dim_feedforward'] = hp.choice('dim_feedforward', [64, 128])  # smaller feedforward
+        space['num_layers'] = hp.choice('num_layers', [1, 2]) # fewer layers
         space['dropout'] = hp.uniform('dropout', 0.0, 0.3)
     return space    
 
@@ -84,7 +92,7 @@ def assign_params(params, model, joint, data_path, result_path):
         'x_noise': 0.15, 
         'y_noise': 0,
         # Training schedule
-        'seq_len': [200, 400], 
+        'seq_len':  [50, 100], #[200, 400], 
         'num_iter': 2 * [params['iter']],
         'batch_size': [2, 4] # 8, 16
     }
@@ -150,17 +158,33 @@ def assign_params(params, model, joint, data_path, result_path):
         #     # Make sure you pass 'prediction' to keep the same pipeline
         #     'prediction': 'angle'
         # }
+
+
+        # model_spec = {
+        #     'inp_size': [8 * len(general_spec['inp'])],
+        #     'outp_size': [3 * len(general_spec['outp'])],
+        #     'num_layers': params['num_layers'],        # e.g., in [2, 3, 4]
+        #     'd_model': params['d_model'],             # e.g., in [64, 96, 128]
+        #     'num_heads': params['num_heads'],         # e.g., in [2, 4]
+        #     'dim_feedforward': params['dim_feedforward'],  # e.g., in [128, 256, 512]
+        #     'dropout': params['dropout'],             # e.g., 0.0 ~ 0.3
+        #     'max_seq_len': 200,                       # or even 100 if 400 is too large
+        #     'prediction': 'angle'
+        # }
+
         model_spec = {
             'inp_size': [8 * len(general_spec['inp'])],
             'outp_size': [3 * len(general_spec['outp'])],
-            'num_layers': params['num_layers'],        # e.g., in [2, 3, 4]
-            'd_model': params['d_model'],             # e.g., in [64, 96, 128]
-            'num_heads': params['num_heads'],         # e.g., in [2, 4]
-            'dim_feedforward': params['dim_feedforward'],  # e.g., in [128, 256, 512]
-            'dropout': params['dropout'],             # e.g., 0.0 ~ 0.3
-            'max_seq_len': 200,                       # or even 100 if 400 is too large
+            'num_layers': params['num_layers'],
+            'd_model': params['d_model'],
+            'num_heads': params['num_heads'],
+            'dim_feedforward': params['dim_feedforward'],
+            'dropout': params['dropout'],
+            # Try a smaller max_seq_len (e.g., 80 or 100):
+            'max_seq_len': 100,
             'prediction': 'angle'
         }
+
         mdl_name = ("transformer_layers{}_dmodel{}_heads{}_ff{}_drop{}_lr{}_decay{}_iter{}"
                     .format(params['num_layers'], params['d_model'], params['num_heads'],
                             params['dim_feedforward'], params['dropout'], params['lr'],

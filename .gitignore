@@ -1,4 +1,9 @@
 ./Data
+checkpoints_cnn/
+Data/
+Results/
+SUB01/
+TestModel/
 
 
 # Compiled source #

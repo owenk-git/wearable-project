@@ -8,11 +8,16 @@ import pandas as pd
 from utils import eval_utils
 from glob import glob
 from tqdm import tqdm
+import xlsxwriter
+
 
 
 if __name__ == '__main__':
 
-    res_path = 'Data/3_Hyperopt_Results/'
+    # res_path = 'Data/3_Hyperopt_Results/'
+    res_path = '/home/owen/projects/25spring/wearable/Data/3_Hyperopt_Results/'
+    # walking_result_path = '/home/owen/projects/25spring/wearable/Data/3_Hyperopt_Results/Walking/'
+    # running_result_path = '/home/owen/projects/25spring/wearable/Data/3_Hyperopt_Results/Running/'
     sub_folders = ['Hip', 'Knee', 'Ankle']
     col_angles = ['Score', 'Flex', 'Add', 'Rot']
     angle_metrics = ['Mean', 'Median', 'Std']
@@ -63,6 +68,7 @@ if __name__ == '__main__':
                 # Update start index for the rows
                 curr_num_rows += val_df.shape[0] + 4 + 5
 
-        writer.save()
+        # writer.save()
+        writer.close()
 
         print('Model summary for {} complete!'.format(act))

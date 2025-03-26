@@ -14,10 +14,10 @@ if __name__ == '__main__':
     # running_data_path = 'Data/2_Processed/running_data.h5'
     # running_result_path = 'Data/3_Hyperopt_Results/Running/'
 
-    walking_data_path = '/mnt/storage/owen/JointAnglePrediction_JOB/Data/2_Processed/walking_data.h5'
-    walking_result_path = '/mnt/storage/owen/JointAnglePrediction_JOB/Data/3_Hyperopt_Results/Walking/'
-    running_data_path = '/mnt/storage/owen/JointAnglePrediction_JOB/Data/2_Processed/running_data.h5'
-    running_result_path = '/mnt/storage/owen/JointAnglePrediction_JOB/Data/3_Hyperopt_Results/Running/'
+    walking_data_path = '/home/owen/projects/25spring/wearable/Data/2_Processed/walking_data.h5'
+    walking_result_path = '/home/owen/projects/25spring/wearable/Data/3_Hyperopt_Results/Walking/'
+    running_data_path = '/home/owen/projects/25spring/wearable/Data/2_Processed/running_data.h5'
+    running_result_path = '/home/owen/projects/25spring/wearable/Data/3_Hyperopt_Results/Running/'
 
 
     # conv_model = 'CustomConv1D'
@@ -55,16 +55,20 @@ if __name__ == '__main__':
 
     # Example usage for the new transformer:
     transformer_model = 'transformer'
-    num_eval_transformer = 50
+    num_eval_transformer = 200
 
     print('Walking transformer begin...')
     walking_lstm_hip = run_model(walking_data_path, walking_result_path, num_eval_transformer, transformer_model, ['hip'], rstate=custom_rstate)
+    print('Walking HIP transformer complete!\n')
     walking_lstm_knee = run_model(walking_data_path, walking_result_path, num_eval_transformer, transformer_model, ['knee'], rstate=custom_rstate)
+    print('Walking KNEE transformer complete!\n')
     walking_lstm_ankle = run_model(walking_data_path, walking_result_path, num_eval_transformer, transformer_model, ['ankle'], rstate=custom_rstate)
     print('Walking transformer complete!\n')
 
     print('Running transformer begin...')
     running_lstm_hip = run_model(running_data_path, running_result_path, num_eval_transformer, transformer_model, ['hip'], rstate=custom_rstate)
+    print('Running HIP transformer complete!\n')
     running_lstm_knee = run_model(running_data_path, running_result_path, num_eval_transformer, transformer_model, ['knee'], rstate=custom_rstate)
+    print('Running KNEE transformer complete!\n')
     running_lstm_ankle = run_model(running_data_path, running_result_path, num_eval_transformer, transformer_model, ['ankle'], rstate=custom_rstate)
     print('Running transformer complete!\n')
