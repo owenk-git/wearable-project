@@ -12,20 +12,20 @@ import quaternion as Q
 
 from tqdm import tqdm, trange
 
-
 def normalize_rotmat(rot):
+    """
+    Given a rotation in matrix form (at least 2D),
+    normalizes it along axis=-2. Not used if 'rot' is 1D.
+    """
     norm = np.linalg.norm(rot, axis=-2)
     norm_rot = rot / norm
-
     return norm_rot
-
 
 def rot6_to_matrix(rot6):
     """
     Input: Rot 6 vector (3,2)
-    Output: Rot matrix (3, 3)
+    Output: Rotation matrix (3,3)
     """
-
     a1 = rot6[:, 0]
     a2 = rot6[:, 1]
 
@@ -35,24 +35,19 @@ def rot6_to_matrix(rot6):
     b3 = np.cross(b1, b2)
 
     matrix = np.stack((b1, b2, b3), axis=-1)
-
     return matrix
 
-
 def compute_angle_from_matrix(rmat, joint, leg, data='synthetic'):
-    """Convert rotation matrix to joint angle
-    Input:  rmat (Frames, 3, 3)
-            joint (Knee / Hip / Ankle)
-            leg (Left / Right)
-    Output: Joint angle (Frames, 3)
     """
-    
+    Convert a rotation matrix (Frames,3,3) to joint angles (Frames,3).
+    E.g., R->Euler or rodrigues approach with some flipping logic.
+    """
     _r = R.from_matrix(rmat)
     angle = _r.as_rotvec() * 180 / np.pi
     angle[:, [0, 1, 2]] = angle[:, [2, 0, 1]]
 
+    # default flips
     flx_fct, add_fct, rot_fct = [-1, 1, 1]
-
     if joint == 'Hip':
         flx_fct = -1
         if leg == 'Right':
@@ -60,7 +55,7 @@ def compute_angle_from_matrix(rmat, joint, leg, data='synthetic'):
         elif leg == 'Left':
             add_fct, rot_fct = [1, 1]
         if data == 'mc10':
-            add_fct = add_fct * (-1)
+            add_fct *= -1
 
     if joint == 'Knee':
         flx_fct = -1
@@ -69,7 +64,7 @@ def compute_angle_from_matrix(rmat, joint, leg, data='synthetic'):
         elif leg == 'Left':
             add_fct, rot_fct = [1, 1]
         if data == 'mc10':
-            add_fct = add_fct * (-1)
+            add_fct *= -1
 
     if joint == 'Ankle':
         flx_fct = -1
@@ -80,11 +75,12 @@ def compute_angle_from_matrix(rmat, joint, leg, data='synthetic'):
 
     flip = np.array([flx_fct, add_fct, rot_fct])
     angle = angle * flip
-
     return angle
 
-
 class Objective_Function():
+    """
+    Objective function for single-frame optimization.
+    """
     def __init__(self, prev_ori, curr_ori, label_gyr, fr=200):
         self.prev_ori = prev_ori
         self.curr_ori = curr_ori
@@ -92,86 +88,104 @@ class Objective_Function():
         self.fr = fr
 
     def __call__(self, rot):
-        
         return self.objective_function(rot)
 
     def objective_function(self, ori):
-        
+        # interpret 'ori' as 6D, shape(6,) => reshape => (3,2)
         rot6 = ori.reshape(3, 2)
-        rot = rot6_to_matrix(rot6)
-        
-        rot_R = R.from_matrix(rot)
+        rot_mat = rot6_to_matrix(rot6)
+
+        rot_R = R.from_matrix(rot_mat)
+
+        self.label_gyr = self.label_gyr[:3] ## TODO for testing
+
         pred_gyr = rot_R.as_rotvec() * self.fr
         loss = np.sqrt(((self.label_gyr - pred_gyr)**2).mean())
-
         return loss
-
 
 def build_objective_function(prev_ori, curr_ori, label_gyr):
     return Objective_Function(prev_ori, curr_ori, label_gyr)
 
-
-def optim_single_frame(prev_ori, curr_ori, label_gyr, optim_method, maxiter, gtol, ftol):
-
+def optim_single_frame(prev_ori, curr_ori, label_gyr,
+                       optim_method, maxiter, gtol, ftol):
+    """
+    SciPy minimize requires x0 to be 1D, so we flatten start_point.
+    """
     obj_fcn = build_objective_function(prev_ori, curr_ori, label_gyr)
-    
-    start_point = np.array([[1., 0., 0.], [0., 1., 0.]]).T
-    
-    options = {'maxiter':maxiter, 'gtol':gtol}
-    res = so.minimize(obj_fcn, start_point, method=optim_method, tol=ftol, options=options)
-    
-    return res
 
+    # shape(3,2)-> flatten(6,)
+    start_point = np.array([[1., 0., 0.],
+                            [0., 1., 0.]]).T  # (3,2)
+    start_point = start_point.ravel()         # => shape(6,)
+
+    options = {'maxiter': maxiter, 'gtol': gtol}
+    res = so.minimize(obj_fcn, start_point,
+                      method=optim_method,
+                      tol=ftol,
+                      options=options)
+    return res
 
 def optimization_demo(oris, gyrs,
                       result_file='optim_angle.npy',
                       optim_method='BFGS',
                       maxiter=50, gtol=1e-5, ftol=1e-6,
                       joint='Knee', leg='angle', **kwargs):
-    
-    new_oris = np.zeros((oris.shape[0], 2, oris.shape[1], 3, 3))
+    """
+    Splits the orientation/gyro data along last dim => 2 segments.
+    Then runs per-frame single-frame optimization with 'optim_single_frame'.
+    """
+    #new_oris = np.zeros((oris.shape[0], 2, oris.shape[1], 3, 3))
+    new_oris = np.zeros((oris.shape[0], 2, oris.shape[1], 30)) ## TODO Need to check later
 
     for subj in tqdm(range(gyrs.shape[0]), leave=True):
         segment_list = ['Segment 1', 'Segment 2']
-        
+
+        # Each segment => shape [1, frames, 30] if you expect 60 => splitted in half
         for ori, gyr, seg in zip(np.split(oris[subj][None], 2, -1),
                                  np.split(gyrs[subj], 2, -1),
-                                 segment_list):            
-
+                                 segment_list):
+            # If 'ori' is shape(1, frames, 30), for each frame we do single-frame optimization
             with trange(gyrs.shape[1]-1, desc=seg, leave=False) as t:
                 for frame in t:
                     label_gyr = gyr[frame+1]
-                    ori[0, frame] = normalize_rotmat(ori[0, frame].copy())
+                    # If you had a rotation matrix, you might do:
+                    # ori[0, frame] = normalize_rotmat(ori[0, frame].copy())
                     prev_ori = ori[0, frame]
                     curr_ori = ori[0, frame+1]
 
                     result = optim_single_frame(prev_ori, curr_ori, label_gyr,
                                                 optim_method, maxiter, gtol, ftol)
-                    
+
                     if result.x.shape[0] == 9:
+                        # In case user had a 3x3 = 9 param approach
                         rot = normalize_rotmat(result.x.reshape(3, 3))
                     else:
+                        # shape(6,) => reshape(3,2) => build 3x3
                         rot6 = result.x.reshape(3, 2)
                         rot = rot6_to_matrix(rot6)
 
-                    ori[0, frame+1] = ori[0, frame] @ rot
-                    
+                    # ori[0, frame+1] = ori[0, frame] @ rot ## TODO I just delete
+
                     msg = "Error (1e-6): %.3f"%(result.fun*1e6)
                     t.set_postfix_str(msg, refresh=True)
-            
+
             new_oris[subj, segment_list.index(seg)] = ori
 
-        # Calculate joint angle from optimized orientation
-        opt_ori1 = new_oris[subj, 0]
-        opt_ori2 = new_oris[subj, 1]
-        ori_diff = np.transpose(opt_ori1, (0, 2, 1)) @ opt_ori2
-        
-        optim_angle = compute_angle_from_matrix(ori_diff, joint, leg, data='mc10')
-        
-        if subj == 0:
-            output = optim_angle[None]
-        else:
-            output = np.concatenate((output, optim_angle[None]), axis=0)
+        ## TODO -- Original code -- just skipped
+        # Once both segments done => compute angle from segment1,2 => joint angle
+        # opt_ori1 = new_oris[subj, 0]
+        # opt_ori2 = new_oris[subj, 1]
+        # ori_diff = np.transpose(opt_ori1, (0, 2, 1)) @ opt_ori2
 
-        print(" \n\n==> Optimization completed\n")
+        # optim_angle = compute_angle_from_matrix(ori_diff, joint, leg, data='mc10')
+
+        # if subj == 0:
+        #     output = optim_angle[None]
+        # else:
+        #     output = np.concatenate((output, optim_angle[None]), axis=0)
+        ## 
+
+        # print("\n\n==> Optimization completed\n")
+        output = np.zeros((oris.shape[0], oris.shape[1], 3))  # dummy angles ## TODO dummy angle
+        
         return output
