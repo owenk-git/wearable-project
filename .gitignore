@@ -22,6 +22,8 @@
 *.npy
 *.sh
 *.png
+*.pkl
+*.pt
 
 # outputs
 ######################
@@ -34,6 +36,7 @@ __pycache__
 tmp*
 _00_matlab_to_python
 _3_analysis
+model
 
 # Logs and databases #
 ######################
