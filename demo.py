@@ -216,15 +216,17 @@ def prepare_data(root_path, subject, segment1, segment2, joint, device, dtype):
 
     # Load custom data
     seg1_accel = load_custom_data(seg1_accel_path)
+    print(seg1_accel)
     seg2_accel = load_custom_data(seg2_accel_path)
     seg1_gyro = load_custom_data(seg1_gyro_path)
     seg2_gyro = load_custom_data(seg2_gyro_path)
     
     # Rotate
-    seg1_accel = rotate_imu_data(seg1_accel, 0, -90, 90)
-    seg2_accel = rotate_imu_data(seg2_accel, 0, -180, -180)
-    seg1_gyro = rotate_imu_data(seg1_gyro, 0, -90, 90)
-    seg2_gyro = rotate_imu_data(seg2_gyro, 0, -180, -180)
+    seg1_accel = rotate_imu_data(seg1_accel, 0, 180, 180)
+    print(seg1_accel)
+    seg2_accel = rotate_imu_data(seg2_accel, 0, 180, 180)
+    seg1_gyro = rotate_imu_data(seg1_gyro, 0, 180, 180)
+    seg2_gyro = rotate_imu_data(seg2_gyro, 0, 180, 180)
 
     
     if gt_angle_path != "":
@@ -289,8 +291,8 @@ if __name__ == "__main__":
     activity = args.activity
     root_path = os.path.join(args.root_path, activity)
     subject = 'SUB01'    # Select the direction of your target leg
-    segment1 = 'LeftThigh'
-    segment2 = 'LeftShank'
+    segment1 = 'LeftShank'
+    segment2 = 'LeftFoot'
     
     inpt_data, inpt_gyro, gt_angle = prepare_data(root_path, subject, segment1, segment2, joint, device, dtype)
     
