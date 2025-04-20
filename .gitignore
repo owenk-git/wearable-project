@@ -28,7 +28,7 @@
 # outputs
 ######################
 Data
-Data.h5
+Walking.h5
 s999
 Preprocessed_external_data_1
 Preprocessed_external_data_2
@@ -37,6 +37,7 @@ tmp*
 _00_matlab_to_python
 _3_analysis
 model
+result
 
 # Logs and databases #
 ######################

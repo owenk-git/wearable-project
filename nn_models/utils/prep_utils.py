@@ -29,6 +29,7 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
                 if inp[0] != 'r' and inp[0] != 'l' and not (inp == 'pelvis'):
                     # Extract right and left data and append norm as fourth column
                     # Right accelerations
+                    print(f"💥 Looking for: s{sid}/{inp}/acc")
                     right_acc = fh['s' + str(sid) + '/r' + inp + '/acc'][:, :]
                     tmp = np.linalg.norm(right_acc, axis=1, keepdims=True)
                     right_acc = np.concatenate((right_acc, tmp), axis=1)
@@ -46,9 +47,9 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
                     left_gyr = np.concatenate((left_gyr, tmp), axis=1)
                     
                     # Right orientations
-                    right_ori = fh['s' + str(sid) + '/r' + inp + '/rmat'][:, :]
+                    #right_ori = fh['s' + str(sid) + '/r' + inp + '/rmat'][:, :]
                     # Left orientations
-                    left_ori = fh['s' + str(sid) + '/l' + inp + '/rmat'][:, :]
+                    #left_ori = fh['s' + str(sid) + '/l' + inp + '/rmat'][:, :]
 
                     # Stack right and left data
                     right_tmp = np.concatenate((right_acc, right_gyr), axis=1)
@@ -56,10 +57,11 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
 
                     x_list.append(np.stack((right_tmp, left_tmp), axis=0))
                     # Add orientation ground truth
-                    y_ori_list.append(np.stack((right_ori, left_ori), axis=0))
+                    #y_ori_list.append(np.stack((right_ori, left_ori), axis=0))
 
                 else:
                     # Accelerations
+                    print(f"💥 Looking for: s{sid}/{inp}/acc")
                     acc = fh['s' + str(sid) + '/' + inp + '/acc'][:, :]
                     tmp = np.linalg.norm(acc, axis=1, keepdims=True)
                     acc = np.concatenate((acc, tmp), axis=1)
@@ -69,7 +71,8 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
                     gyr = np.concatenate((gyr, tmp), axis=1)
                     
                     # Orientations
-                    ori = fh['s' + str(sid) + '/' + inp + '/rmat'][:, :]
+                    #if prediction == 'orientation':
+                    #    ori = fh['s' + str(sid) + '/' + inp + '/rmat'][:, :]
                     
                     # Concatenate accelerations and angular velocity columns
                     tmp = np.concatenate((acc, gyr), axis=1)
@@ -77,14 +80,14 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
                                             'shank' in inp_fields or
                                             'foot' in inp_fields):
                         tmp = np.stack((tmp, tmp), axis=0)
-                        ori = np.stack((ori, ori), axis=0)
+                        #ori = np.stack((ori, ori), axis=0)
                         x_list.append(tmp)
                         # Add orientation ground truth
-                        y_ori_list.append(ori)
+                        #y_ori_list.append(ori)
                     else:
                         x_list.append(tmp[None, :, :])
                         # Add orientation ground truth
-                        y_ori_list.append(ori[None, :, :])
+                        #y_ori_list.append(ori[None, :, :])
             x = np.concatenate(x_list, axis=2)
 
             y_angle_list = []
@@ -98,13 +101,15 @@ def get_sub_dict(h5path, subject_ids, inp_fields, outp_fields, prediction, devic
                     angle = fh['s' + str(sid) + '/' + outp + '/angle'][:, :]
                     y_angle_list.append(angle[None, :, :])
 
-            y_ori = np.concatenate(y_ori_list, axis=-1)
+            #if prediction == 'orientation':
+                #y_ori = np.concatenate(y_ori_list, axis=-1)
+
             y_angle = np.concatenate(y_angle_list, axis=2)
             
             if prediction == 'angle':
                 y = y_angle.copy()
-            elif prediction == 'orientation':
-                y = y_ori.copy()
+            #elif prediction == 'orientation':
+                #y = y_ori.copy()
             
             x = torch.from_numpy(x).float().to(device)
             y = torch.from_numpy(y).float().to(device)
@@ -122,10 +127,12 @@ def get_subject_split(h5path, split):
         subs = list(fh.keys())
         subs.sort(key=lambda x: int(x[1:]))
         for sub in subs:
-            if fh[sub].attrs['checks_passed']:
+            #if fh[sub].attrs['checks_passed']:
+                #sub_list.append(sub)
+            if fh[sub].attrs.get('checks_passed', True):  # 預設是 True ✅
                 sub_list.append(sub)
     # Create separate random number generator stream for subject split
-    split_rnd_gen = RandomState(42)
+    split_rnd_gen = RandomState(4)
 
     # Split up ids of valid subject into training, validation and testing
     ids = [int(x[1:]) for x in sub_list]
@@ -134,6 +141,9 @@ def get_subject_split(h5path, split):
     train_ids = ids[0:split_ids[0]]
     val_ids = ids[split_ids[0]:split_ids[1]]
     test_ids = ids[split_ids[1]:]
+    print(f"🎯 train_ids: {train_ids}")
+    print(f"🧪 val_ids: {val_ids}")
+    print(f"🔬 test_ids: {test_ids}")
 
     return train_ids, val_ids, test_ids
 

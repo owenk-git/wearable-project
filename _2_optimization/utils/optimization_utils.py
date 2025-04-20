@@ -8,7 +8,9 @@
 import numpy as np
 import scipy.optimize as so
 from scipy.spatial.transform import Rotation as R
-import quaternion as Q
+#import quaternion as Q
+
+
 
 from tqdm import tqdm, trange
 

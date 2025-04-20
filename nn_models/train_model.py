@@ -16,8 +16,13 @@ from nn_models.utils import prep_utils, data_utils, dloader_utils  # noqa
 from nn_models.utils import log_utils, train_utils  # noqa
 from nn_models.models.pure_conv import *  # noqa
 from nn_models.models.pure_lstm import *  # noqa
+from nn_models.models.pure_transformer import transformer
 
-
+MODEL_REGISTRY = {
+    'transformer': transformer,
+    'lstm': CustomLSTM,
+    # 'transformer_rope': TransformerModelRoPE, ← 如果你改名的話
+}
 def main(general_spec, model_spec, show_bar=True):
     np.random.seed(42)
     torch.random.manual_seed(42)
@@ -37,7 +42,9 @@ def main(general_spec, model_spec, show_bar=True):
 
     # Get device and parse model, optimizer etc
     device = prep_utils.get_device(show_bar)
-    model = globals()[model_type](**model_spec).to(device)
+    if model_type not in MODEL_REGISTRY:
+        raise ValueError(f"[X] Unknown model_type: {model_type}")
+    model = MODEL_REGISTRY[model_type](**model_spec).to(device)
     optimizer = globals()[general_spec['optim']](model.parameters(), lr=general_spec['lr'])
     scheduler = globals()[scheduler_spec['type']](optimizer, **scheduler_spec['args'])
     criterion = globals()[general_spec['loss']]()
@@ -63,7 +70,7 @@ def main(general_spec, model_spec, show_bar=True):
         pickle.dump(model_kwargs_dict, f)
 
     # Split up subjects into 80% training, 10% validation, 10% test
-    train_ids, val_ids, test_ids = prep_utils.get_subject_split(h5path, [0.8, 0.1, 0.1])
+    train_ids, val_ids, test_ids = prep_utils.get_subject_split(h5path, [0.6, 0.2, 0.2])
 
     # Load data
     train_dict = prep_utils.get_sub_dict(h5path, train_ids, general_spec['inp'],
@@ -72,7 +79,9 @@ def main(general_spec, model_spec, show_bar=True):
                                        general_spec['outp'], model_spec['prediction'], device)
     test_dict = prep_utils.get_sub_dict(h5path, test_ids, general_spec['inp'],
                                         general_spec['outp'], model_spec['prediction'], device)
-
+    #print(f"train dict:{train_dict}")
+    #print(f"val dict:{val_dict}")
+    #print(f"test dict:{test_dict}")
     # Create datasets
     train_dset = dloader_utils.SubjectDataset(train_dict, None, test=False)
     val_dset = dloader_utils.SubjectDataset(val_dict, None, test=True)
@@ -88,14 +97,14 @@ def main(general_spec, model_spec, show_bar=True):
     test_dset.add_normalizer(normalizer)
 
     # Set up data augmentor by adding rotational and white noise
-    augmentor = data_utils.Augmentor(general_spec['rot_type'], device)
-    augmentor.set_rot_noise(rot_spread=general_spec['rot_spread']*pi)
-    augmentor.set_white_noise(normalizer.params['x_std']*general_spec['x_noise'],
-                              normalizer.params['y_std']*general_spec['y_noise'])
+    #augmentor = data_utils.Augmentor(general_spec['rot_type'], device)
+    #augmentor.set_rot_noise(rot_spread=general_spec['rot_spread']*pi)
+    #augmentor.set_white_noise(normalizer.params['x_std']*general_spec['x_noise'],
+    #                          normalizer.params['y_std']*general_spec['y_noise'])
 
     # Add augmentor to training dataset
-    if general_spec['aug']:
-        train_dset.add_augmentor(augmentor)
+    #if general_spec['aug']:
+        #train_dset.add_augmentor(augmentor)
 
     # Add normalizer to validation dataset (-> Normalize) and logger (-> De-Normalize)
     val_dset.add_normalizer(normalizer)
