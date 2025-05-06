@@ -113,7 +113,7 @@ def main(general_spec, model_spec, show_bar=True):
     # Create validation and test dataloaders
     val_dloader = dloader_utils.CustomDataLoader(val_dset, batch_size=len(val_dset), shuffle=False)
     test_dloader = dloader_utils.CustomDataLoader(test_dset, batch_size=len(test_dset),
-                                                  shuffle=False)
+                                                shuffle=False)
 
     # Iterate through training stages
     for i in range(0, len(stage_spec)):
@@ -130,12 +130,12 @@ def main(general_spec, model_spec, show_bar=True):
 
         # Get train dataloader
         train_dloader = dloader_utils.CustomDataLoader(train_dset,
-                                                       batch_size=stage['batch_size'], shuffle=True)
+                                                    batch_size=stage['batch_size'], shuffle=True)
 
         # Run current training stage
         model, scheduler, logger = train_utils.run_stage(model, scheduler, criterion,
-                                                         train_dloader, val_dloader, test_dloader,
-                                                         logger, stage, show_bar)
+                                                        train_dloader, val_dloader, test_dloader,
+                                                        logger, stage, show_bar)
 
         if show_bar:
             print('Stage finished! \n')

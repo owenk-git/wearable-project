@@ -337,8 +337,14 @@ def prepare_data(root_path, subject, segment1, segment2, joint, device, dtype):
     seg1_gyro = load_custom_data(seg1_gyro_path)
     seg2_gyro = load_custom_data(seg2_gyro_path)
     
+    #seg1_accel = seg1_accel[:,2000:8000,:]
+    #seg2_accel = seg2_accel[:,2000:8000,:]
+    #seg1_gyro = seg1_gyro[:,2000:8000,:]
+    #seg2_gyro = seg2_gyro[:,2000:8000,:]
+    
     if gt_angle_path != "":
         gt_angle = load_custom_data(gt_angle_path, is_imu_data=False)
+        #gt_angle = gt_angle[:,2000:8000,:]
         
         # Smooth Ground-truth values
         b, a = butter(4, 2*5/100, 'low')
@@ -416,9 +422,9 @@ if __name__ == "__main__":
     joint = args.joint
     activity = args.activity
     root_path = os.path.join(args.root_path, activity)
-    subject = 's23_4'    # Select the direction of your target leg
-    segment1 = 'lshank'
-    segment2 = 'lfoot'
+    subject = '06'    # Select the direction of your target leg
+    segment1 = 'lthigh'
+    segment2 = 'lshank'
     
     inpt_data, inpt_gyro, gt_angle = prepare_data(root_path, subject, segment1, segment2, joint, device, dtype)
     
@@ -436,17 +442,17 @@ if __name__ == "__main__":
             print(model_kwargs)
         model = globals()['CustomConv1D'](**model_kwargs) if model_kwargs["model_type"] == "CustomConv1D" \
                                                         else globals()['transformer'](**model_kwargs)
-        state_dict = torch.load(osp.join(angle_model_fldr, "model.pt"), map_location=torch.device('cpu'))
+        state_dict = torch.load(osp.join(angle_model_fldr, "model.pt"), map_location=torch.device('cpu'),weights_only=True)
         model.load_state_dict(state_dict)
         model.to(device=device, dtype=dtype)
 
         if model_fldr == angle_model_fldr:
             angle_model = model
-            angle_norm_dict = torch.load(osp.join(angle_model_fldr, "norm_dict.pt"), map_location=torch.device('cpu'))['params']
+            angle_norm_dict = torch.load(osp.join(angle_model_fldr, "norm_dict.pt"), map_location=torch.device('cpu'),weights_only=True)['params']
 
         else:
             ori_model = model
-            ori_norm_dict = torch.load(osp.join(ori_model_fldr, "norm_dict.pt"), map_location=torch.device('cpu'))['params']        
+            ori_norm_dict = torch.load(osp.join(ori_model_fldr, "norm_dict.pt"), map_location=torch.device('cpu'), weights_only=True)['params']        
 
     # Get optimization parameters (weight, std ratio)
     #with open('Data/5_Optimization/parameters.pkl', 'rb') as fopen:
